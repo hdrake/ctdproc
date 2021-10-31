@@ -12,16 +12,14 @@ def unique_arrays(*arrays):
 
     Parameters
     ----------
-    arrays : np.array or list
-        Numpy arrays either in a list or separated by commas.
+    arrays : A tuple of np.array.ndarray
 
     Returns
     -------
     unique : np.array
-        Numpy array with unique elements from the input arrays.
+        numpy array with unique elements from the input arrays
     """
-    h = np.hstack(np.squeeze(arrays))
-    return np.unique(h)
+    return np.unique(np.hstack(arrays))
 
 
 def findsegments(ibad):
@@ -87,10 +85,10 @@ def inearby(ibad, inearm, inearp, n):
         k = np.array([]).astype("int64")
     else:
         istart, istop, seglength = findsegments(ibad)
-        new_ind = []
+        new_ind = np.array([]).astype("int64")
         for ia, ib in zip(istart, istop):
-            new_ind.append(list(range(ia - inearm, ib + inearp + 1)))
-        k = unique_arrays(new_ind)
+            new_ind = np.append(new_ind, np.arange(ia - inearm, ib + inearp + 1))
+        k = np.unique(new_ind)
         k = k[((k >= 0) & (k < n))]
     return k
 
@@ -174,13 +172,17 @@ def glitchcorrect(x, diffx, prodx, ibefore=0, iafter=0):
     dmul2 = -dx[0:-1] * dx[1:]
     dmul3 = -dx[0:-2] * dx[2:]
 
-    ii2 = np.argwhere(
-        np.greater(dmul2, prodx, where=np.isfinite(dmul2))
-        & np.greater(dmin2, diffx, where=np.isfinite(dmin2))
+    ii2 = np.squeeze(
+        np.argwhere(
+            np.greater(dmul2, prodx, where=np.isfinite(dmul2))
+            & np.greater(dmin2, diffx, where=np.isfinite(dmin2))
+        )
     )
-    ii3 = np.argwhere(
-        np.greater(dmul3, prodx, where=np.isfinite(dmul3))
-        & np.greater(dmin3, diffx, where=np.isfinite(dmin3))
+    ii3 = np.squeeze(
+        np.argwhere(
+            np.greater(dmul3, prodx, where=np.isfinite(dmul3))
+            & np.greater(dmin3, diffx, where=np.isfinite(dmin3))
+        )
     )
 
     ii2 = unique_arrays(ii2, ii2 + 1)
@@ -188,6 +190,7 @@ def glitchcorrect(x, diffx, prodx, ibefore=0, iafter=0):
 
     jj2 = inearby(ii2, ibefore, iafter, nx)
     jj3 = inearby(ii3, ibefore, iafter, nx)
+
     jj = unique_arrays(jj2, jj3)
 
     if jj.size > 0:
@@ -218,7 +221,8 @@ def preen(x, xmin, xmax):
     ii = np.squeeze(np.where(((x < xmin) | (x > xmax) | (np.imag(x) != 0))))
     indexclean = np.delete(indexall, ii)
     x = np.delete(x, ii)
-    xp = interp1d(indexclean, x, bounds_error=False, fill_value="extrapolate")(indexall)
+    fint = interp1d(indexclean, x, bounds_error=False, fill_value=np.nan)
+    xp = fint(indexall)
     return xp
 
 
